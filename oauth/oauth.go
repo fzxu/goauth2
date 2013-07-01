@@ -326,29 +326,36 @@ func (t *Transport) updateToken(tok *Token, v url.Values) error {
 		ExpiresIn time.Duration `json:"expires_in"`
 	}
 
-	content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	switch content {
-	case "application/x-www-form-urlencoded", "text/plain":
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return err
-		}
-		vals, err := url.ParseQuery(string(body))
-		if err != nil {
-			return err
-		}
-
-		b.Access = vals.Get("access_token")
-		b.Refresh = vals.Get("refresh_token")
-		b.ExpiresIn, _ = time.ParseDuration(vals.Get("expires_in") + "s")
-	default:
+	if r.Request.Host == "api.weibo.com" {
 		if err = json.NewDecoder(r.Body).Decode(&b); err != nil {
 			return err
 		}
-		// The JSON parser treats the unitless ExpiresIn like 'ns' instead of 's' as above,
-		// so compensate here.
-		b.ExpiresIn *= time.Second
+	} else {
+		content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		switch content {
+		case "application/x-www-form-urlencoded", "text/plain":
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				return err
+			}
+			vals, err := url.ParseQuery(string(body))
+			if err != nil {
+				return err
+			}
+
+			b.Access = vals.Get("access_token")
+			b.Refresh = vals.Get("refresh_token")
+			b.ExpiresIn, _ = time.ParseDuration(vals.Get("expires_in") + "s")
+		default:
+			if err = json.NewDecoder(r.Body).Decode(&b); err != nil {
+				return err
+			}
+			// The JSON parser treats the unitless ExpiresIn like 'ns' instead of 's' as above,
+			// so compensate here.
+			b.ExpiresIn *= time.Second
+		}
 	}
+
 	tok.AccessToken = b.Access
 	// Don't overwrite `RefreshToken` with an empty value
 	if len(b.Refresh) > 0 {
