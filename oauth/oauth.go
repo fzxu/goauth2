@@ -47,6 +47,10 @@ import (
 	"time"
 )
 
+const (
+	WEIBO_URL = "api.weibo.com"
+)
+
 type OAuthError struct {
 	prefix string
 	msg    string
@@ -264,7 +268,12 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// so that we don't modify the Request we were given.
 	// This is required by the specification of http.RoundTripper.
 	req = cloneRequest(req)
-	req.Header.Set("Authorization", "Bearer "+t.AccessToken)
+
+	if req.Host == WEIBO_URL {
+		req.Header.Set("Authorization", "OAuth2 "+t.AccessToken) // for weibo.com
+	} else {
+		req.Header.Set("Authorization", "Bearer "+t.AccessToken)
+	}
 
 	// Make the HTTP request.
 	return t.transport().RoundTrip(req)
@@ -326,7 +335,7 @@ func (t *Transport) updateToken(tok *Token, v url.Values) error {
 		ExpiresIn time.Duration `json:"expires_in"`
 	}
 
-	if r.Request.Host == "api.weibo.com" {
+	if r.Request.Host == WEIBO_URL {
 		if err = json.NewDecoder(r.Body).Decode(&b); err != nil {
 			return err
 		}
