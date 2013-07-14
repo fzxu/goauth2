@@ -138,6 +138,7 @@ type Token struct {
 	AccessToken  string
 	RefreshToken string
 	Expiry       time.Time // If zero the token has no (known) expiry time.
+	Uid          string
 }
 
 func (t *Token) Expired() bool {
@@ -333,6 +334,7 @@ func (t *Transport) updateToken(tok *Token, v url.Values) error {
 		Access    string        `json:"access_token"`
 		Refresh   string        `json:"refresh_token"`
 		ExpiresIn time.Duration `json:"expires_in"`
+		Uid       string
 	}
 
 	if r.Request.Host == WEIBO_URL {
@@ -341,6 +343,7 @@ func (t *Transport) updateToken(tok *Token, v url.Values) error {
 		}
 		// weibo return the expires in ms
 		b.ExpiresIn *= time.Millisecond
+		tok.Uid = b.Uid //weibo returns uid when getting the token, kind of convinient
 	} else {
 		content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		switch content {
