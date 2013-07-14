@@ -339,6 +339,8 @@ func (t *Transport) updateToken(tok *Token, v url.Values) error {
 		if err = json.NewDecoder(r.Body).Decode(&b); err != nil {
 			return err
 		}
+		// weibo return the expires in ms
+		b.ExpiresIn *= time.Millisecond
 	} else {
 		content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		switch content {
